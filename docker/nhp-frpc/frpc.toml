@@ -1,0 +1,19 @@
+serverAddr = "177.7.0.10"
+serverPort = 7000
+
+auth.method = "token"
+auth.token = "12345678"
+
+[[proxies]]
+name = "test-tcp1"
+type = "tcp"
+localIP = "177.7.0.12"
+localPort = 8080
+remotePort = 6000
+
+[[proxies]]
+name = "test-tcp2"
+type = "tcp"
+localIP = "177.7.0.13"
+localPort = 8080
+remotePort = 8000

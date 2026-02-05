@@ -1,0 +1,14 @@
+FROM opennhp-base:latest AS building
+
+COPY . /building
+WORKDIR /building
+
+RUN go mod tidy
+
+RUN make frpc
+
+FROM ubuntu:22.04  AS runtime
+
+COPY --from=building /building/bin/ /nhp-agent/
+
+ENTRYPOINT ["/nhp-agent/frpc", "-c", "/nhp-agent/frpc.toml"]

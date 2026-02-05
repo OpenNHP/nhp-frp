@@ -1,0 +1,33 @@
+FROM opennhp-base:latest  AS builder
+
+WORKDIR /workdir
+
+COPY . .
+
+RUN echo "Building for architecture: ${TARGETARCH}"
+
+RUN cd /workdir/third_party/opennhp && cat Makefile && make init agentd
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y  wget \
+    ca-certificates \
+    iptables \
+    tcpdump \
+    clang \
+    ipset \
+    nginx \
+    git \
+    curl \
+    inetutils-ping \
+    telnet \
+    && rm -rf /var/lib/apt/lists/*
+RUN groupadd -r nginx && \
+    useradd -r -g nginx -s /bin/bash -d /home/nginx -m nginx
+
+RUN mv /workdir/third_party/opennhp/release/nhp-agent /nhp-agent
+USER root
+
+CMD ["tail", "-f", "/dev/null"]
+#CMD ["nginx && /nhp-agent/nhp-agentd run"]
+#CMD ["nginx"]
