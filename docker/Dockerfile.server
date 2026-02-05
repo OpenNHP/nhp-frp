@@ -1,0 +1,30 @@
+FROM opennhp-base:latest  AS builder
+
+WORKDIR /nhp-server
+
+COPY . .
+
+RUN echo "Building for architecture: ${TARGETARCH}"
+
+RUN cd /nhp-server/third_party/opennhp &&  make init serverd plugins
+
+FROM ubuntu:22.04  AS runtime
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y  wget \
+    ca-certificates \
+    nginx \
+    iptables \
+    tcpdump \
+    ipset \
+    git \
+    curl \
+    telnet \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /nhp-server/third_party/opennhp/release/nhp-server /nhp-server
+
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["nginx & /nhp-server/nhp-serverd run"]

@@ -1,0 +1,119 @@
+networks:
+  network_default:
+    ipam:
+      driver: default
+      config:
+        - subnet: '177.7.0.0/16'
+
+volumes:
+  postgres_data: 
+
+services:
+  nhp-server:
+    image: nhpfrp-opennhpserver
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile.server
+      args:
+        - GOPROXY=${GOPROXY:-}
+    container_name: nhpfrp-nhpserver
+    restart: always
+    networks:
+      network_default:
+        ipv4_address: 177.7.0.9
+    volumes:
+      - ./nhp-server/etc/:/nhp-server/etc/:rw
+      - ./nhp-server/logs/:/nhp-server/logs/:rw
+      - ./nhp-server/templates/:/nhp-server/templates/:rw
+      - ./nhp-server/plugins/example/etc/:/nhp-server/plugins/example/etc/:rw
+
+  nhp-ac:
+    image: nhpfrp-opennhpac-nhpfrps
+    container_name: nhp-ac
+    build: 
+      context: ..
+      dockerfile: ./docker/Dockerfile.ac_frps
+    volumes:
+      - ./nhp-ac/etc/:/nhp-ac/etc/
+      - ./nhp-ac/traefik/etc/traefik.toml:/opt/traefik/traefik.toml
+      - ./nhp-ac/traefik/etc/provider.toml:/opt/traefik/provider.toml
+      - ./nhp-ac/logs/:/nhp-ac/logs/
+    restart: always
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      - nhp-server
+    networks:
+      network_default:
+        ipv4_address: 177.7.0.10
+
+  nhp-frpc:
+    image: nhpfrp-nhpfrpc
+    build: 
+      context: ..
+      dockerfile: ./docker/Dockerfile.frpc
+    container_name: nhpfrp-nhpfrpc
+    restart: always
+    #command: []
+    networks:
+      network_default:
+        ipv4_address: 177.7.0.11
+    depends_on:
+      - nhp-server
+      - nhp-ac
+    volumes:
+      - ./nhp-enter-nginx.conf:/etc/nginx/nginx.conf:rw
+      - ./certs/server.crt:/cert.pem:r
+      - ./certs/server.key:/key.pem:r
+      - ./nhp-frpc/etc:/nhp-agent/etc:rw
+      - ./nhp-frpc/logs:/nhp-agent/logs:rw
+      - ./nhp-frpc/frpc.toml:/nhp-agent/frpc.toml:rw
+
+  nhp-agent:
+    image: nhpfrp-client
+    build: 
+      context: ..
+      dockerfile: ./docker/Dockerfile.agent
+    container_name: nhpfrp-client
+    restart: always
+    #command: []
+    #ports:
+    #  - "443:443"
+    #  - "80:80"
+    networks:
+      network_default:
+        ipv4_address: 177.7.0.8
+    depends_on:
+      - nhp-server
+      - nhp-ac
+    volumes:
+      - ./nhp-enter-nginx.conf:/etc/nginx/nginx.conf:rw
+      - ./certs/server.crt:/cert.pem:r
+      - ./certs/server.key:/key.pem:r
+      - ./nhp-agent/etc:/nhp-agent/etc:rw
+      - ./nhp-agent/logs:/nhp-agent/logs:rw
+
+  web-app1:
+    image: web-app
+    container_name: web-app1
+    build: 
+      context: .
+      dockerfile: ./Dockerfile.app
+    restart: always
+    cap_add:
+      - NET_ADMIN
+    networks:
+      network_default:
+        ipv4_address: 177.7.0.12
+
+  web-app2:
+    container_name: web-app2
+    build: 
+      context: .
+      dockerfile: ./Dockerfile.app
+    restart: always
+    cap_add:
+      - NET_ADMIN
+    networks:
+      network_default:
+        ipv4_address: 177.7.0.13

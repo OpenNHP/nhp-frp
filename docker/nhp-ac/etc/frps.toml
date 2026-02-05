@@ -1,0 +1,9 @@
+bindPort = 7000
+
+auth.method = "token"
+auth.token = "12345678"
+
+log.to = "./frps.log"
+# trace, debug, info, warn, error
+log.level = "trace"
+log.maxDays = 3

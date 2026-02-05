@@ -1,0 +1,59 @@
+FROM opennhp-base:latest AS builder
+WORKDIR /nhp-server
+
+COPY . .
+
+RUN echo "Building for architecture: ${TARGETARCH}"
+
+RUN cd /nhp-server/third_party/opennhp &&  make init acd test
+
+
+FROM golang:1.25 AS frp-builder
+WORKDIR /building
+
+COPY . .
+RUN make frps
+
+FROM ubuntu:22.04  AS runtime
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y  wget \
+    ca-certificates \
+    iptables \
+    tcpdump \
+    clang \
+    ipset \
+    git \
+    curl \
+    telnet \
+    && rm -rf /var/lib/apt/lists/*
+
+# Traefik version
+ARG TRAEFIK_VERSION=v2.10.4
+
+# traefik config
+RUN mkdir -p /opt/traefik/
+
+# Copy the traefik configuration file
+COPY --from=builder /nhp-server/third_party/opennhp/docker/traefik_v3.4.0-rc2_linux_amd64.tar.gz /traefik.tar.gz
+RUN tar -zxvf traefik.tar.gz && \
+    mv traefik /opt/traefik/ && \
+    chmod +x /opt/traefik/traefik && \
+    rm -rf /tmp/*
+
+COPY --from=builder /nhp-server/third_party/opennhp/release/nhp-ac /nhp-ac
+COPY --from=builder /nhp-server/third_party/opennhp/docker/iptables_defaults_ubuntu.sh /iptables_defaults_ubuntu.sh
+COPY --from=builder /nhp-server/third_party/opennhp/docker/iptables_defaults_x86.sh /iptables_defaults_x86.sh
+RUN if [ "$(uname -m)" = "x86_64" ]; then \
+        mv /iptables_defaults_x86.sh /iptables_defaults.sh; \
+    else \
+        mv /iptables_defaults_ubuntu.sh /iptables_defaults.sh; \
+    fi && \
+    chmod +x /iptables_defaults.sh && \
+    rm -f /iptables_defaults_*.sh
+    
+COPY --from=frp-builder /building/bin/frps /nhp-ac
+
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["/iptables_defaults.sh && nohup /nhp-ac/frps -c /nhp-ac/etc/frps.toml && cd /opt/traefik/ && nohup ./traefik --configFile=traefik.toml 2>&1 & -- & /nhp-ac/nhp-acd run"]
+#ENTRYPOINT ["/nhp-ac/nhp-acd", "run"]
