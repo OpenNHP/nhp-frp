@@ -1,6 +1,6 @@
 module github.com/fatedier/frp
 
-go 1.25.0
+go 1.25.6
 
 require (
 	github.com/OpenNHP/opennhp/endpoints v0.0.0-20260118020651-91dcec886336
