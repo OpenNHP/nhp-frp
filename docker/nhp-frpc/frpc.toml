@@ -4,6 +4,18 @@ serverPort = 7000
 auth.method = "token"
 auth.token = "12345678"
 
+webServer.addr = "127.0.0.1"
+webServer.port = 7400
+webServer.user = "opennhp-frp"
+webServer.password = "opennhp-frp"
+
+[[proxies]]
+name = "test-admin"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 7400
+remotePort = 7400
+
 [[proxies]]
 name = "test-tcp1"
 type = "tcp"
@@ -17,3 +29,10 @@ type = "tcp"
 localIP = "177.7.0.13"
 localPort = 8080
 remotePort = 8000
+
+[[proxies]]
+name = "test-subdomain"
+type = "http"
+localIP = "177.7.0.13"
+localPort = 8080
+subdomain = "test"
