@@ -13,18 +13,19 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'age-check-bypass') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
 
       - name: Check Go module release ages
         env:
           MIN_AGE_DAYS: "7"
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
 
           failed=false
-          base_ref="origin/${{ github.event.pull_request.base.ref }}"
+          base_ref="origin/${BASE_REF}"
 
           changed_sums=$(git diff --name-only "${base_ref}...HEAD" -- '**/go.sum' 'go.sum' || true)
 
