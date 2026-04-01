@@ -1,0 +1,86 @@
+name: Dependency Age Check
+
+on:
+  pull_request:
+    paths:
+      - "**/go.sum"
+
+permissions:
+  contents: read
+
+jobs:
+  check-dependency-age:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'age-check-bypass') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check Go module release ages
+        env:
+          MIN_AGE_DAYS: "7"
+        run: |
+          set -euo pipefail
+
+          failed=false
+          base_ref="origin/${{ github.event.pull_request.base.ref }}"
+
+          changed_sums=$(git diff --name-only "${base_ref}...HEAD" -- '**/go.sum' 'go.sum' || true)
+
+          if [ -z "$changed_sums" ]; then
+            echo "No go.sum changes detected"
+            exit 0
+          fi
+
+          for sum_file in $changed_sums; do
+            echo "::group::Checking ${sum_file}"
+
+            new_deps=$(git diff "${base_ref}...HEAD" -- "$sum_file" \
+              | grep '^+' | grep -v '^+++' \
+              | awk '{print $1 " " $2}' \
+              | sed 's|/go.mod$||' \
+              | sort -u)
+
+            if [ -z "$new_deps" ]; then
+              echo "No new dependencies in ${sum_file}"
+              echo "::endgroup::"
+              continue
+            fi
+
+            while IFS=' ' read -r module version; do
+              [[ "$version" =~ ^v ]] || continue
+
+              encoded_module=$(echo "$module" | sed 's/\([A-Z]\)/!\L\1/g')
+              info_url="https://proxy.golang.org/${encoded_module}/@v/${version}.info"
+
+              response=$(curl -sf "$info_url" 2>/dev/null || echo "")
+              if [ -z "$response" ]; then
+                echo "  Warning: could not fetch info for ${module}@${version}"
+                continue
+              fi
+
+              publish_time=$(echo "$response" | jq -r '.Time')
+              publish_epoch=$(date -d "$publish_time" +%s)
+              now_epoch=$(date +%s)
+              age_days=$(( (now_epoch - publish_epoch) / 86400 ))
+
+              if [ "$age_days" -lt "$MIN_AGE_DAYS" ]; then
+                echo "::error file=${sum_file}::${module}@${version} published ${age_days} day(s) ago (minimum: ${MIN_AGE_DAYS})"
+                failed=true
+              else
+                echo "  OK: ${module}@${version} (${age_days} days old)"
+              fi
+            done <<< "$new_deps"
+
+            echo "::endgroup::"
+          done
+
+          if [ "$failed" = true ]; then
+            echo ""
+            echo "::error::One or more Go dependencies are younger than ${MIN_AGE_DAYS} days."
+            echo "To bypass for emergency security updates, add the 'age-check-bypass' label to this PR."
+            exit 1
+          fi
+
+          echo "All Go dependencies are at least ${MIN_AGE_DAYS} days old"
