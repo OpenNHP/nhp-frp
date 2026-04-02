@@ -8,7 +8,7 @@ RUN echo "Building for architecture: ${TARGETARCH}"
 RUN cd /nhp-server/third_party/opennhp &&  make init acd test
 
 
-FROM golang:1.25 AS frp-builder
+FROM golang:1.26 AS frp-builder
 WORKDIR /building
 
 COPY . .
