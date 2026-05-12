@@ -6,7 +6,7 @@ require (
 	github.com/OpenNHP/opennhp/endpoints v0.0.0-20260118020651-91dcec886336
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/fatedier/frp v0.68.1
-	github.com/pelletier/go-toml/v2 v2.3.0
+	github.com/pelletier/go-toml/v2 v2.3.1
 	github.com/spf13/cobra v1.10.2
 )
 
