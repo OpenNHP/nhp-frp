@@ -5,8 +5,8 @@ go 1.25.6
 require (
 	github.com/OpenNHP/opennhp/endpoints v0.0.0-20260118020651-91dcec886336
 	github.com/denisbrodbeck/machineid v1.0.1
-	github.com/fatedier/frp v0.68.1
-	github.com/pelletier/go-toml/v2 v2.3.0
+	github.com/fatedier/frp v0.69.0
+	github.com/pelletier/go-toml/v2 v2.3.1
 	github.com/spf13/cobra v1.10.2
 )
 
@@ -25,7 +25,7 @@ require (
 	github.com/coocood/freecache v1.2.5 // indirect
 	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
 	github.com/emmansun/gmsm v0.41.0 // indirect
-	github.com/fatedier/golib v0.6.0 // indirect
+	github.com/fatedier/golib v0.7.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
