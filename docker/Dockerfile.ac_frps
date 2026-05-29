@@ -14,7 +14,7 @@ WORKDIR /building
 COPY . .
 RUN make frps
 
-FROM ubuntu:24.04  AS runtime
+FROM ubuntu:26.04  AS runtime
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y  wget \

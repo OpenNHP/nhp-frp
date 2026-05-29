@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM ubuntu:24.04 AS builder
+FROM --platform=$BUILDPLATFORM ubuntu:26.04 AS builder
 
 # Get target platform architecture
 ARG TARGETARCH
@@ -61,7 +61,7 @@ COPY ./web-app .
 RUN CGO_ENABLED=0 GOOS=linux go mod tidy && go build -o app
 
 # Stage 2: Create a minimal runtime image
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
